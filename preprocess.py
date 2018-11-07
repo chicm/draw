@@ -3,7 +3,10 @@ import glob
 import numpy as np
 import pandas as pd
 import time
+import cv2
 from sklearn.utils import shuffle
+import pickle
+from utils import draw_cv2
 import settings
 
 
@@ -63,6 +66,62 @@ def generate_train_ids():
     df_val_20.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_20.csv'), index=False)
     df_val_50.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_50.csv'), index=False)
 
+def generate_recognized_train_ids():
+    bg = time.time()
+    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), dtype={'key_id': np.str})
+    print(df_train_ids.shape, time.time() - bg)
+    df_train_ids = df_train_ids[df_train_ids['recognized'] == True]
+    print(df_train_ids.shape, time.time() - bg)
+
+    df_train_ids.to_csv(os.path.join(settings.DATA_DIR, 'train_ids_recognized.csv'), index=False)
+
+
+def generate_train_images(index, img_sz=256):
+    bunch_size = 1000000
+    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids_recognized.csv'), dtype={'key_id': np.str}).iloc[bunch_size*index:bunch_size*(index+1)]
+    print(df_train_ids.shape)
+    csv_file = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}.csv'.format(index))
+    img_dir = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}'.format(index))
+
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+
+    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
+    for df_file in df_files:
+        print(df_file)
+        df = pd.read_csv(df_file, dtype={'key_id': np.str}).set_index('key_id')
+        df_cls_ids = df_train_ids[df_train_ids['filename']==os.path.basename(df_file)]
+        print(df_cls_ids.shape)
+        for key_id in df_cls_ids['key_id'].values:
+            stroke = eval(df.loc[key_id].drawing)
+            img = draw_cv2(stroke)
+            fn = os.path.join(img_dir, '{}.jpg'.format(key_id))
+            cv2.imwrite(fn, img)
+
+    df_train_ids.to_csv(csv_file, index=False)
+
+
+def generate_val_50_images(img_sz=256):
+    df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_50.csv'), dtype={'key_id': np.str})
+    print(df_val_ids.shape)
+    img_dir = os.path.join(settings.DATA_DIR, 'val-50-{}'.format(img_sz))
+
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+
+    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
+    for df_file in df_files:
+        print(df_file)
+        df = pd.read_csv(df_file, dtype={'key_id': np.str}).set_index('key_id')
+        df_cls_ids = df_val_ids[df_val_ids['filename']==os.path.basename(df_file)]
+        print(df_cls_ids.shape)
+        for key_id in df_cls_ids['key_id'].values:
+            stroke = eval(df.loc[key_id].drawing)
+            img = draw_cv2(stroke)
+            fn = os.path.join(img_dir, '{}.jpg'.format(key_id))
+            cv2.imwrite(fn, img)
+
+
 def test_train_meta():
     bg = time.time()
     df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'))
@@ -71,20 +130,12 @@ def test_train_meta():
     print(df_train_ids.shape, time.time() - bg)
 
     return df_train_ids, {}
-    '''
-    dfs = {}
-    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
-    for df_file in df_files:
-        print(df_file)
-        df = pd.read_csv(df_file)
-        filename = os.path.basename(df_file)
-        dfs[filename] = df
-
-    print('done')
-    '''
 
 if __name__ == '__main__':
     #generate_train_ids()
+    #generate_recognized_train_ids()
     #test_train_meta()
-    x = {}
-    print(x['abc'])
+    #generate_train_images(0)
+    generate_val_50_images()
+    #test_train_imgs()
+    

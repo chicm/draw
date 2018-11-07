@@ -26,7 +26,7 @@ def get_classes():
     df = pd.read_csv('classes.csv')
     classes = df.classes.values.tolist()
     print(len(classes))
-    print(classes)
+    #print(classes)
     stoi = {classes[i]: i for i in range(len(classes))}
     return classes, stoi
 
@@ -36,14 +36,18 @@ def get_sub_df(df, index):
     end_index = len(df) * (index+1) // 100
     return df.iloc[start_index:end_index]
 
-def get_train_meta():
-    bg = time.time()
-    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), dtype={'key_id': np.str})
-    print(df_train_ids.shape, time.time() - bg)
-    df_train_ids = df_train_ids[df_train_ids['recognized'] == True]
-    print(df_train_ids.shape, time.time() - bg)
+def get_train_meta(index=0, img_sz=256):
+    df_file = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}.csv'.format(index))
+    df = pd.read_csv(df_file, dtype={'key_id': np.str})
+    img_dir = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}'.format(index))
+    
+    return df, img_dir
 
-    return df_train_ids, {}
+def get_val_meta(val_num=10, img_sz=256):
+    df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_{}.csv'.format(val_num)), dtype={'key_id': np.str})
+    img_dir = os.path.join(settings.DATA_DIR, 'val-50-{}'.format(img_sz))
+
+    return df_val_ids, img_dir
 
 def get_img(key_id, filename, dfs):
     #print(type(key_id))
@@ -82,11 +86,12 @@ def test_draw():
         #cv2.waitKey(0)
 
 def test_train_meta():
-    train_ids, train_dfs = get_train_meta()
-    print(train_ids.iloc[:10])
-    for row in train_ids.iloc[:10][['key_id', 'filename']].values:
+    df, img_dir = get_train_meta(0)
+    print(df.head())
+    for row in df.iloc[:10].values:
         print(row)
-        img = get_img(row[0], row[1], train_dfs)
+        fn = os.path.join(img_dir, '{}.jpg'.format(row[0]))
+        img = cv2.imread(fn)
         cv2.imshow('image', img)
         cv2.waitKey(0)
 

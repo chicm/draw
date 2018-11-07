@@ -7,6 +7,7 @@ import pandas as pd
 import time
 import settings
 
+# https://www.kaggle.com/gaborfodor/greyscale-mobilenet-lb-0-892
 BASE_SIZE = 256
 def draw_cv2(raw_strokes, size=256, lw=4, time_color=False):
     img = np.zeros((BASE_SIZE, BASE_SIZE), np.uint8)
@@ -26,49 +27,39 @@ def get_classes():
     classes = df.classes.values.tolist()
     print(len(classes))
     print(classes)
-    return classes
+    stoi = {classes[i]: i for i in range(len(classes))}
+    return classes, stoi
 
-def generate_classes():
-    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
-    classes = [os.path.basename(x).split('.')[0].replace(' ', '_') for x in df_files]
-    print(classes)
-    df_classes = pd.DataFrame(data=classes, columns=['classes'])
-    print(df_classes.head())
-    df_classes.to_csv('classes.csv', index=False)
 
 def get_sub_df(df, index):
     start_index = len(df) * index // 100
     end_index = len(df) * (index+1) // 100
     return df.iloc[start_index:end_index]
 
-def get_train_val_meta(index=0):
-    val_percent = 0.05
-    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
-    df_train = None
-    df_val = None
-    for df_file in df_files:
-        print(df_file)
-        df = pd.read_csv(df_file)
-        #print('unique key', df.key_id.nunique())
-        print(df.shape)
-        split_index = int(len(df) * (1-val_percent))
-        print(split_index)
-        df_t = df.iloc[:split_index] #get_sub_df(df.iloc[:split_index], index)
-        print(df_t.shape)
-        #print(df_t.head())
-        df_v = df.iloc[split_index:]
-        if df_train is None:
-            df_train = df_t
-        else:
-            df_train = pd.concat([df_train, df_t])
+def get_train_meta():
+    bg = time.time()
+    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), dtype={'key_id': np.str})
+    print(df_train_ids.shape, time.time() - bg)
+    df_train_ids = df_train_ids[df_train_ids['recognized'] == True]
+    print(df_train_ids.shape, time.time() - bg)
 
-        print('unique key', df_train.shape, df_train.key_id.nunique())
-        #if df_val is None:
-        #    df_val = df_v
-        #else:
-        #    df_val = pd.concat([df_val, df_v])
-    print(df_train.shape)
-    #print(df_val.shape)
+    return df_train_ids, {}
+
+def get_img(key_id, filename, dfs):
+    #print(type(key_id))
+    if filename in dfs:
+        df = dfs[filename]
+    else:
+        df = pd.read_csv(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, filename), dtype={'key_id': np.str}).set_index('key_id')
+        dfs[filename] = df
+    #print(df.head())
+    #print(key_id)
+
+    #print('>>', df.loc[key_id].drawing)
+    stroke = eval(df.loc[key_id].drawing)
+
+    #print(stroke)
+    return draw_cv2(stroke)
 
 def test_draw():
     df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
@@ -90,8 +81,24 @@ def test_draw():
         #cv2.imshow("Image", img)
         #cv2.waitKey(0)
 
+def test_train_meta():
+    train_ids, train_dfs = get_train_meta()
+    print(train_ids.iloc[:10])
+    for row in train_ids.iloc[:10][['key_id', 'filename']].values:
+        print(row)
+        img = get_img(row[0], row[1], train_dfs)
+        cv2.imshow('image', img)
+        cv2.waitKey(0)
+
+def test_iloc():
+    df = pd.read_csv(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, 'flying saucer.csv'), dtype={'key_id': np.str}).set_index('key_id')
+    print(df.head())
+    print(df.loc['4596155960786944'])
+
 if __name__ == '__main__':
     #test_draw()
     #generate_classes()
     #get_classes()
-    get_train_val_meta()
+    #get_train_val_meta()
+    test_train_meta()
+    #test_iloc()

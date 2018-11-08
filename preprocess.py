@@ -121,6 +121,18 @@ def generate_val_50_images(img_sz=256):
             fn = os.path.join(img_dir, '{}.jpg'.format(key_id))
             cv2.imwrite(fn, img)
 
+def generate_test_images(img_sz=256):
+    df = pd.read_csv(settings.TEST_SIMPLIFIED, dtype={'key_id': np.str})
+    img_dir = settings.TEST_SIMPLIFIED_IMG_DIR
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+
+    for row in df.values:
+        key_id = row[0]
+        stroke = eval(row[2])
+        img = draw_cv2(stroke)
+        fn = os.path.join(img_dir, '{}.jpg'.format(key_id))
+        cv2.imwrite(fn, img)
 
 def test_train_meta():
     bg = time.time()
@@ -136,6 +148,7 @@ if __name__ == '__main__':
     #generate_recognized_train_ids()
     #test_train_meta()
     #generate_train_images(0)
-    generate_val_50_images()
+    #generate_val_50_images()
+    generate_test_images()
     #test_train_imgs()
     

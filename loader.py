@@ -49,6 +49,10 @@ class ImageDataset(data.Dataset):
 def get_train_loader(train_index, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
     df, img_dir = get_train_meta(index=train_index)
+
+    if dev_mode:
+        df = df.iloc[:10]
+
     dset = ImageDataset(df, img_dir, stoi, img_transform=train_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
     dloader.num = len(dset)
@@ -57,11 +61,29 @@ def get_train_loader(train_index, batch_size=4, dev_mode=False):
 def get_val_loader(val_num=50, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
     df, img_dir = get_val_meta(val_num=val_num)
+
+    if dev_mode:
+        df = df.iloc[:10]
+
     dset = ImageDataset(df, img_dir, stoi, img_transform=test_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
     dloader.num = len(dset)
     return dloader
 
+def get_test_loader(batch_size=256, dev_mode=False):
+    _, stoi = get_classes()
+    test_df = pd.read_csv(settings.SAMPLE_SUBMISSION, dtype={'key_id': np.str})
+
+    if dev_mode:
+        test_df = test_df.iloc[:10]
+
+    img_dir = settings.TEST_SIMPLIFIED_IMG_DIR
+    #print(test_df.head())
+    dset = ImageDataset(test_df, img_dir, stoi, has_label=False, img_transform=test_transforms)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
+    dloader.num = len(dset)
+    dloader.meta = test_df
+    return dloader
 
 def test_train_loader():
     loader = get_train_loader(0)
@@ -74,6 +96,13 @@ def test_val_loader():
         print(img.size(), target)
         print(torch.max(img), torch.min(img))
 
+def test_test_loader():
+    loader = get_test_loader(dev_mode=True)
+    print(loader.num)
+    for img in loader:
+        print(img.size())
+
 if __name__ == '__main__':
     #test_train_loader()
-    test_val_loader()
+    #test_val_loader()
+    test_test_loader()

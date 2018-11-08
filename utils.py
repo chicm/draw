@@ -25,7 +25,7 @@ def draw_cv2(raw_strokes, size=256, lw=4, time_color=False):
 def get_classes():
     df = pd.read_csv('classes.csv')
     classes = df.classes.values.tolist()
-    print(len(classes))
+    #print(len(classes))
     #print(classes)
     stoi = {classes[i]: i for i in range(len(classes))}
     return classes, stoi
@@ -38,6 +38,7 @@ def get_sub_df(df, index):
 
 def get_train_meta(index=0, img_sz=256):
     df_file = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}.csv'.format(index))
+    print(df_file)
     df = pd.read_csv(df_file, dtype={'key_id': np.str})
     img_dir = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}'.format(index))
     

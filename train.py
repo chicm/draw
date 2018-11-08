@@ -48,7 +48,7 @@ def train(args):
         lr_scheduler = CosineAnnealingLR(optimizer, args.t_max, eta_min=args.min_lr)
     #ExponentialLR(optimizer, 0.9, last_epoch=-1) #CosineAnnealingLR(optimizer, 15, 1e-7) 
 
-    val_loader = get_val_loader(batch_size=args.batch_size)
+    val_loader = get_val_loader(val_num=args.val_num, batch_size=args.batch_size)
     
     best_top3_acc = 0.
 
@@ -72,7 +72,7 @@ def train(args):
     train_iter = 0
 
     for epoch in range(args.start_epoch, args.epochs):
-        train_loader = get_train_loader(batch_size=args.batch_size, dev_mode=args.dev_mode)
+        train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode)
 
         train_loss = 0
 
@@ -211,6 +211,8 @@ if __name__ == '__main__':
     parser.add_argument('--sub_file', default='sub_backbone_4.csv', help='optimizer')
     parser.add_argument('--no_first_val', action='store_true')
     parser.add_argument('--always_save',action='store_true', help='alway save')
+    parser.add_argument('--train_num', default=15, type=int, help='alway save')
+    parser.add_argument('--val_num', default=50, type=int, help='alway save')
     
     args = parser.parse_args()
     print(args)

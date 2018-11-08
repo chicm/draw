@@ -46,17 +46,17 @@ class ImageDataset(data.Dataset):
     def __len__(self):
         return len(self.df)
 
-def get_train_loader(batch_size=4, dev_mode=False):
+def get_train_loader(train_index, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
-    df, img_dir = get_train_meta()
+    df, img_dir = get_train_meta(index=train_index)
     dset = ImageDataset(df, img_dir, stoi, img_transform=train_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
     dloader.num = len(dset)
     return dloader
 
-def get_val_loader(batch_size=4, dev_mode=False):
+def get_val_loader(val_num=50, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
-    df, img_dir = get_val_meta()
+    df, img_dir = get_val_meta(val_num=val_num)
     dset = ImageDataset(df, img_dir, stoi, img_transform=test_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
     dloader.num = len(dset)
@@ -64,7 +64,7 @@ def get_val_loader(batch_size=4, dev_mode=False):
 
 
 def test_train_loader():
-    loader = get_train_loader()
+    loader = get_train_loader(0)
     for img, target in loader:
         print(img.size(), target)
 

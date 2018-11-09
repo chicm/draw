@@ -9,7 +9,7 @@ import settings
 
 # https://www.kaggle.com/gaborfodor/greyscale-mobilenet-lb-0-892
 BASE_SIZE = 256
-def draw_cv2(raw_strokes, size=256, lw=4, time_color=False):
+def draw_cv2(raw_strokes, size=256, lw=6, time_color=False):
     img = np.zeros((BASE_SIZE, BASE_SIZE), np.uint8)
     for t, stroke in enumerate(raw_strokes):
         for i in range(len(stroke[0]) - 1):

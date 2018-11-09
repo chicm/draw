@@ -23,7 +23,7 @@ def generate_train_ids():
     df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
     train_dfs = []
     val_dfs = []
-    val_dfs_10 = []
+    val_dfs_100 = []
     val_dfs_20 = []
     val_dfs_50 = []
 
@@ -42,30 +42,30 @@ def generate_train_ids():
         df_t = df.iloc[:split_index]
         df_v = df.iloc[split_index:]
         print(df_v.shape)
-        df_v = shuffle(df_v[df_v['recognized']==True].sort_values('key_id'), random_state=1234)
-        print(df_v.shape)
+        #df_v = shuffle(df_v[df_v['recognized']==True].sort_values('key_id'), random_state=1234)
         
         train_dfs.append(df_t)
         val_dfs.append(df_v)
-        val_dfs_10.append(df_v.iloc[:10])
+        val_dfs_100.append(df_v.iloc[:100])
         val_dfs_20.append(df_v.iloc[:20])
         val_dfs_50.append(df_v.iloc[:50])
         
         #if i == 2:
         #    break
-
-    df_train = shuffle(pd.concat(train_dfs), random_state=1234)
-    df_val = shuffle(pd.concat(val_dfs), random_state=1234)
-    df_val_10 = shuffle(pd.concat(val_dfs_10), random_state=1234)
-    df_val_20 = shuffle(pd.concat(val_dfs_20), random_state=1234)
-    df_val_50 = shuffle(pd.concat(val_dfs_50), random_state=1234)
-
+    print('sorting...')
+    df_train = shuffle(pd.concat(train_dfs).sort_values('key_id'), random_state=1234)
+    df_val = shuffle(pd.concat(val_dfs).sort_values('key_id'), random_state=1234)
+    df_val_100 = shuffle(pd.concat(val_dfs_100).sort_values('key_id'), random_state=1234)
+    df_val_20 = shuffle(pd.concat(val_dfs_20).sort_values('key_id'), random_state=1234)
+    df_val_50 = shuffle(pd.concat(val_dfs_50).sort_values('key_id'), random_state=1234)
+    
+    print('saving...')
     df_train.to_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), index=False)
     df_val.to_csv(os.path.join(settings.DATA_DIR, 'val_ids.csv'), index=False)
-    df_val_10.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_10.csv'), index=False)
+    df_val_100.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_100.csv'), index=False)
     df_val_20.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_20.csv'), index=False)
     df_val_50.to_csv(os.path.join(settings.DATA_DIR, 'val_ids_50.csv'), index=False)
-
+'''
 def generate_recognized_train_ids():
     bg = time.time()
     df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), dtype={'key_id': np.str})
@@ -74,11 +74,12 @@ def generate_recognized_train_ids():
     print(df_train_ids.shape, time.time() - bg)
 
     df_train_ids.to_csv(os.path.join(settings.DATA_DIR, 'train_ids_recognized.csv'), index=False)
-
+'''
 
 def generate_train_images(index, img_sz=256):
     bunch_size = 1000000
-    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids_recognized.csv'), dtype={'key_id': np.str}).iloc[bunch_size*index:bunch_size*(index+1)]
+    #df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids_recognized.csv'), dtype={'key_id': np.str}).iloc[bunch_size*index:bunch_size*(index+1)]
+    df_train_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'), dtype={'key_id': np.str}).iloc[bunch_size*index:bunch_size*(index+1)]
     print(df_train_ids.shape)
     csv_file = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}.csv'.format(index))
     img_dir = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}'.format(index))
@@ -101,10 +102,10 @@ def generate_train_images(index, img_sz=256):
     df_train_ids.to_csv(csv_file, index=False)
 
 
-def generate_val_50_images(img_sz=256):
-    df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_50.csv'), dtype={'key_id': np.str})
+def generate_val_100_images(img_sz=256):
+    df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_100.csv'), dtype={'key_id': np.str})
     print(df_val_ids.shape)
-    img_dir = os.path.join(settings.DATA_DIR, 'val-50-{}'.format(img_sz))
+    img_dir = os.path.join(settings.DATA_DIR, 'val-100-{}'.format(img_sz))
 
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
@@ -144,11 +145,11 @@ def test_train_meta():
     return df_train_ids, {}
 
 if __name__ == '__main__':
-    #generate_train_ids()
-    #generate_recognized_train_ids()
+    generate_train_ids()
+    generate_val_100_images()
     #test_train_meta()
-    #generate_train_images(0)
+    for i in range(40):
+        generate_train_images(i)
     #generate_val_50_images()
-    generate_test_images()
     #test_train_imgs()
     

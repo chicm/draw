@@ -46,7 +46,7 @@ def get_train_meta(index=0, img_sz=256):
 
 def get_val_meta(val_num=50, img_sz=256):
     df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_{}.csv'.format(val_num)), dtype={'key_id': np.str})
-    img_dir = os.path.join(settings.DATA_DIR, 'val-50-{}'.format(img_sz))
+    img_dir = os.path.join(settings.DATA_DIR, 'val-100-{}'.format(img_sz))
 
     return df_val_ids, img_dir
 

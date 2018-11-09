@@ -145,10 +145,11 @@ def test_train_meta():
     return df_train_ids, {}
 
 if __name__ == '__main__':
-    generate_train_ids()
-    generate_val_100_images()
+    #generate_train_ids()
+    #generate_val_100_images()
     #test_train_meta()
-    for i in range(40):
+    for i in range(9,30):
+        print('index:', i)
         generate_train_images(i)
     #generate_val_50_images()
     #test_train_imgs()

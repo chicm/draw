@@ -6,7 +6,7 @@ import time
 import cv2
 from sklearn.utils import shuffle
 import pickle
-from utils import draw_cv2
+from utils import draw_cv2, get_train_meta
 import settings
 
 
@@ -144,13 +144,19 @@ def test_train_meta():
 
     return df_train_ids, {}
 
+def get_country_codes():
+    df = get_train_meta(0)
+    codes = sorted(list(set(df['countrycode'].values.tolist())))
+    print(codes)
+
 if __name__ == '__main__':
-    generate_train_ids()
-    generate_val_100_images()
+    #generate_train_ids()
+    #generate_val_100_images()
     #test_train_meta()
     #for i in range(9,30):
     #print('index:', i)
-    generate_train_images(0)
+    #generate_train_images(0)
     #generate_val_50_images()
     #test_train_imgs()
+    get_country_codes()
     

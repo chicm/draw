@@ -4,12 +4,13 @@ from PIL import Image
 import glob
 import numpy as np
 import pandas as pd
+import json
 import time
 import settings
 
 # https://www.kaggle.com/gaborfodor/greyscale-mobilenet-lb-0-892
 BASE_SIZE = 256
-def draw_cv2(raw_strokes, size=256, lw=6, time_color=False):
+def draw_cv2(raw_strokes, size=256, lw=6, time_color=True):
     img = np.zeros((BASE_SIZE, BASE_SIZE), np.uint8)
     for t, stroke in enumerate(raw_strokes):
         for i in range(len(stroke[0]) - 1):
@@ -30,70 +31,41 @@ def get_classes():
     stoi = {classes[i]: i for i in range(len(classes))}
     return classes, stoi
 
-
-def get_sub_df(df, index):
-    start_index = len(df) * index // 100
-    end_index = len(df) * (index+1) // 100
-    return df.iloc[start_index:end_index]
-
-def get_train_meta(index=0, img_sz=256):
-    df_file = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}.csv'.format(index))
+def get_train_meta(index=0, dev_mode=False):
+    df_file = os.path.join(settings.DATA_DIR, 'train_shuffle', 'train_k{}.csv'.format(index))
     print(df_file)
-    df = pd.read_csv(df_file, dtype={'key_id': np.str})
-    img_dir = os.path.join(settings.DATA_DIR, 'train-{}'.format(img_sz), 'train_{}'.format(index))
-    
-    return df, img_dir
 
-def get_val_meta(val_num=50, img_sz=256):
-    df_val_ids = pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids_{}.csv'.format(val_num)), dtype={'key_id': np.str})
-    img_dir = os.path.join(settings.DATA_DIR, 'val-100-{}'.format(img_sz))
-
-    return df_val_ids, img_dir
-
-def get_img(key_id, filename, dfs):
-    #print(type(key_id))
-    if filename in dfs:
-        df = dfs[filename]
-    else:
-        df = pd.read_csv(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, filename), dtype={'key_id': np.str}).set_index('key_id')
-        dfs[filename] = df
+    df = pd.read_csv(df_file)
+    if dev_mode:
+        df = df.iloc[:10]
+    df['drawing'] = df['drawing'].apply(json.loads)
     #print(df.head())
-    #print(key_id)
+    
+    return df
 
-    #print('>>', df.loc[key_id].drawing)
-    stroke = eval(df.loc[key_id].drawing)
-
-    #print(stroke)
-    return draw_cv2(stroke)
-
-def test_draw():
-    df_files = glob.glob(os.path.join(settings.TRAIN_SIMPLIFIED_DIR, '*.csv'))
-    df_test = pd.read_csv(df_files[0])
-    print(df_test.shape)
-    df_test = df_test[df_test.recognized==True]
-    print(df_test.shape)
-
-    bg = time.time()
-    test = None
-    for i, stroke in enumerate(df_test.drawing.values):
-        img = draw_cv2(eval(stroke))
-        #print(img.shape)
-        test = img
-
-        if i % 10000 == 0:
-            print(i, time.time() - bg)
-
-        #cv2.imshow("Image", img)
-        #cv2.waitKey(0)
+def get_val_meta(val_num=20000):
+    df_file = os.path.join(settings.DATA_DIR, 'train_shuffle', 'train_k99.csv')
+    
+    df = pd.read_csv(df_file).iloc[:val_num]
+    df['drawing'] = df['drawing'].apply(json.loads)
+    return df
 
 def test_train_meta():
-    df, img_dir = get_train_meta(0)
+    df = get_train_meta(0)
     print(df.head())
-    for row in df.iloc[:10].values:
-        print(row)
-        fn = os.path.join(img_dir, '{}.jpg'.format(row[0]))
-        img = cv2.imread(fn)
-        cv2.imshow('image', img)
+    for stroke, word in df.iloc[:10][['drawing', 'word']].values:
+        #print(stroke)
+        img = draw_cv2(stroke)
+        cv2.imshow(word, img)
+        cv2.waitKey(0)
+
+def test_val_meta():
+    df = get_val_meta()
+    print(df.head())
+    for stroke, word in df.iloc[:10][['drawing', 'word']].values:
+        #print(stroke)
+        img = draw_cv2(stroke)
+        cv2.imshow(word, img)
         cv2.waitKey(0)
 
 def test_iloc():
@@ -106,5 +78,6 @@ if __name__ == '__main__':
     #generate_classes()
     #get_classes()
     #get_train_val_meta()
-    test_train_meta()
+    #test_train_meta()
+    test_val_meta()
     #test_iloc()

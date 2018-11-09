@@ -7,9 +7,10 @@ from torchvision import datasets, models, transforms
 import cv2
 from PIL import Image
 import random
-from utils import get_classes, get_train_meta, get_val_meta
+from utils import get_classes, get_train_meta, get_val_meta, draw_cv2
 import settings
 
+'''
 train_transforms = transforms.Compose([
             transforms.RandomHorizontalFlip(),
             transforms.Resize((128,128)),
@@ -22,27 +23,55 @@ test_transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # open images mean and std
         ])
+'''
+
+
+class Resize(object):
+    def __init__(self, img_sz=(128,128)):
+        self.img_sz = img_sz
+    def __call__(self, img):
+        return cv2.resize(img, self.img_sz)
+
+class HFlip(object):
+    def __call__(self, img):
+        if random.random() < 0.5:
+            return np.flip(img, 1)
+        else:
+            return img
+
+class ToTensor(object):
+    def __call__(self, img):
+        mean=[0.485, 0.456, 0.406]
+        std=[0.229, 0.224, 0.225]
+        img = (img / 255.).astype(np.float32)
+        img = np.stack([(img-mean[0])/std[0], (img-mean[1])/std[1], (img-mean[2])/std[2]])
+        return img
+
+train_transforms = transforms.Compose([
+            HFlip(),
+            Resize((128, 128)),
+            ToTensor()
+            #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # open images mean and std
+        ])
+
+test_transforms = transforms.Compose([
+            Resize((128, 128)),
+            ToTensor(),
+            #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # open images mean and std
+        ])
 
 class ImageDataset(data.Dataset):
-    def __init__(self, df, img_dir, stoi, has_label=True, img_transform=None):
-        self.stoi = stoi
-        self.img_dir = img_dir
+    def __init__(self, df, has_label=True, img_transform=None):
         self.df = df
         self.has_label = has_label
         self.img_transform = img_transform
         
     def __getitem__(self, index):
         df_row = self.df.iloc[index]
-        key_id = df_row.key_id
-        fn = os.path.join(self.img_dir, '{}.jpg'.format(key_id))
-        #img = cv2.imread(fn)
-        img = Image.open(fn, 'r')
-        img = img.convert('RGB')
+        img = draw_cv2(df_row.drawing)
         img = self.img_transform(img)  
         if self.has_label:
-            word = df_row.word
-            target_name = word.replace(' ', '_')
-            return img, self.stoi[target_name]
+            return img, df_row.y
         else:
             return img
     def __len__(self):
@@ -50,24 +79,24 @@ class ImageDataset(data.Dataset):
 
 def get_train_loader(train_index, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
-    df, img_dir = get_train_meta(index=train_index)
+    df = get_train_meta(index=train_index, dev_mode=dev_mode)
 
     if dev_mode:
         df = df.iloc[:10]
 
-    dset = ImageDataset(df, img_dir, stoi, img_transform=train_transforms)
+    dset = ImageDataset(df, img_transform=train_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
     dloader.num = len(dset)
     return dloader
 
 def get_val_loader(val_num=50, batch_size=4, dev_mode=False):
     _, stoi = get_classes()
-    df, img_dir = get_val_meta(val_num=val_num)
+    df = get_val_meta(val_num=val_num)
 
     if dev_mode:
         df = df.iloc[:10]
 
-    dset = ImageDataset(df, img_dir, stoi, img_transform=test_transforms)
+    dset = ImageDataset(df, img_transform=test_transforms)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
     dloader.num = len(dset)
     return dloader
@@ -88,9 +117,10 @@ def get_test_loader(batch_size=256, dev_mode=False):
     return dloader
 
 def test_train_loader():
-    loader = get_train_loader(0)
+    loader = get_train_loader(0, dev_mode=True)
     for img, target in loader:
         print(img.size(), target)
+        print(img)
 
 def test_val_loader():
     loader = get_val_loader()
@@ -105,6 +135,6 @@ def test_test_loader():
         print(img.size())
 
 if __name__ == '__main__':
-    #test_train_loader()
+    test_train_loader()
     #test_val_loader()
-    test_test_loader()
+    #test_test_loader()

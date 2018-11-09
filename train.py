@@ -178,17 +178,12 @@ if __name__ == '__main__':
     parser.add_argument('--t_max', default=12, type=int, help='lr scheduler patience')
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--dev_mode', action='store_true')
-    parser.add_argument('--predict', action='store_true')
-    parser.add_argument('--sub_file', default='sub_backbone_4.csv', help='optimizer')
     parser.add_argument('--no_first_val', action='store_true')
     parser.add_argument('--always_save',action='store_true', help='alway save')
-    parser.add_argument('--train_num', default=15, type=int, help='alway save')
-    parser.add_argument('--val_num', default=50, type=int, help='alway save')
+    parser.add_argument('--train_num', default=95, type=int, help='alway save')
+    parser.add_argument('--val_num', default=20000, type=int, help='alway save')
     
     args = parser.parse_args()
     print(args)
 
-    if args.predict:
-        predict_softmax(args)
-    else:
-        train(args)
+    train(args)

@@ -73,6 +73,6 @@ def main():
     generate_shards(categories)
 
 if __name__ == '__main__':
-    #main()
+    main()
     shuffle_csvs()
 

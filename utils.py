@@ -8,6 +8,31 @@ import json
 import time
 import settings
 
+country_code_names = ['OTHER', 'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AN', 'AO', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX',
+    'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BM', 'BN', 'BO', 'BR', 'BS', 'BT', 'BU',
+    'BW', 'BY', 'BZ', 'CA', 'CD', 'CF', 'CG', 'CH', 'CI', 'CL', 'CM', 'CN', 'CO', 'CR', 'CV', 'CW', 'CX',
+    'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'ES', 'ET', 'FI', 'FJ', 'FM', 'FO',
+    'FR', 'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GR', 'GT', 'GU', 'GY',
+    'HK', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO',
+    'JP', 'KE', 'KG', 'KH', 'KN', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT',
+    'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ',
+    'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NC', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NZ',
+    'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO',
+    'RS', 'RU', 'RW', 'SA', 'SC', 'SE', 'SG', 'SI', 'SJ', 'SK', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV',
+    'SX', 'SZ', 'TC', 'TG', 'TH', 'TJ', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TW', 'TZ', 'UA', 'UG', 'US',
+    'UY', 'UZ', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW', 'ZZ']
+
+country_codes = {country_code_names[i]: i for i in range(len(country_code_names))} 
+country_codes_len = len(country_code_names)
+
+def get_country_code(df_row):
+    #print(df_row)
+    if pd.isna(df_row.countrycode):
+        #print('NA country code')
+        return 0.
+    else:
+        return country_codes[df_row.countrycode] / country_codes_len
+
 # https://www.kaggle.com/gaborfodor/greyscale-mobilenet-lb-0-892
 BASE_SIZE = 256
 def draw_cv2(raw_strokes, size=256, lw=6, time_color=True):
@@ -79,5 +104,6 @@ if __name__ == '__main__':
     #get_classes()
     #get_train_val_meta()
     #test_train_meta()
-    test_val_meta()
+    #test_val_meta()
     #test_iloc()
+    print(sorted(country_codes), len(country_codes))

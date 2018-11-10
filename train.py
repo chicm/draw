@@ -56,7 +56,7 @@ def train(args):
         lr_scheduler = CosineAnnealingLR(optimizer, args.t_max, eta_min=args.min_lr)
     #ExponentialLR(optimizer, 0.9, last_epoch=-1) #CosineAnnealingLR(optimizer, 15, 1e-7) 
 
-    val_loader = get_val_loader(val_num=args.val_num, batch_size=args.batch_size, dev_mode=args.dev_mode)
+    val_loader = get_val_loader(val_num=args.val_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
     
     best_map3 = 0.
 
@@ -80,7 +80,7 @@ def train(args):
     train_iter = 0
 
     for epoch in range(args.start_epoch, args.epochs):
-        train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode)
+        train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
 
         train_loss = 0
 
@@ -164,7 +164,7 @@ def validate(args, model, val_loader):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Ship detection')
-    parser.add_argument('--backbone', default='resnet34', type=str, help='backbone')
+    parser.add_argument('--backbone', default='resnet18', type=str, help='backbone')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
     parser.add_argument('--min_lr', default=0.0001, type=float, help='min learning rate')
     parser.add_argument('--batch_size', default=200, type=int, help='batch_size')
@@ -181,6 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_first_val', action='store_true')
     parser.add_argument('--always_save',action='store_true', help='alway save')
     parser.add_argument('--train_num', default=95, type=int, help='alway save')
+    parser.add_argument('--img_sz', default=256, type=int, help='alway save')
     parser.add_argument('--val_num', default=20000, type=int, help='alway save')
     
     args = parser.parse_args()

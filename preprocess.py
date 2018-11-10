@@ -145,9 +145,33 @@ def test_train_meta():
     return df_train_ids, {}
 
 def get_country_codes():
-    df = get_train_meta(0)
-    codes = sorted(list(set(df['countrycode'].values.tolist())))
-    print(codes)
+    country_codes = set()
+    for i in range(40):
+        df = get_train_meta(i)
+        codes = set(df['countrycode'].values.tolist())
+        print(codes, len(codes))
+        print(df.shape)
+        nan_rows = df[df['countrycode'].isnull()]
+        print(nan_rows.shape)
+        country_codes = country_codes | codes
+        print(country_codes, len(country_codes))
+    print('result:', country_codes, len(country_codes))
+
+def get_country_codes_2():
+    df1= pd.read_csv(os.path.join(settings.DATA_DIR, 'train_ids.csv'))
+    codes1 = set(df1['countrycode'].values.tolist())
+    print(codes1, len(codes1))
+    
+    df2= pd.read_csv(os.path.join(settings.DATA_DIR, 'val_ids.csv'))
+    codes2 = set(df2['countrycode'].values.tolist())
+    print(codes2, len(codes2))
+
+    df3= pd.read_csv(os.path.join(settings.DATA_DIR, 'test_simplified.csv'))
+    codes3 = set(df3['countrycode'].values.tolist())
+    print(codes3, len(codes3))
+
+    codes4 = codes1 | codes2 | codes3
+    print(codes4, len(codes4))
 
 if __name__ == '__main__':
     #generate_train_ids()
@@ -158,5 +182,5 @@ if __name__ == '__main__':
     #generate_train_images(0)
     #generate_val_50_images()
     #test_train_imgs()
-    get_country_codes()
+    get_country_codes_2()
     

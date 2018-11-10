@@ -28,7 +28,7 @@ def predict_top3(args):
         raise AssertionError('model file not exist: {}'.format(model_file))
 
     model.eval()
-    test_loader = get_test_loader(batch_size=args.batch_size, dev_mode=args.dev_mode)
+    test_loader = get_test_loader(batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
 
     preds = None
     with torch.no_grad():
@@ -72,6 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--dev_mode', action='store_true')
     parser.add_argument('--sub_file', default='sub/sub1.csv', help='submission file')
+    parser.add_argument('--img_sz', default=256, type=int, help='alway save')
     
     args = parser.parse_args()
     print(args)

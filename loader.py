@@ -5,6 +5,7 @@ import torch
 import torch.utils.data as data
 from torchvision import datasets, models, transforms
 import cv2
+import json
 from PIL import Image
 import random
 from utils import get_classes, get_train_meta, get_val_meta, draw_cv2, get_country_code
@@ -84,6 +85,7 @@ class ImageDataset(data.Dataset):
 
     def load_img(self, df_row):
         img = draw_cv2(df_row.drawing)
+        #print(df_row.drawing)
         if self.img_sz != 256:
             img = cv2.resize(img, (self.img_sz, self.img_sz))
         img = (img / 255.).astype(np.float32)
@@ -93,7 +95,8 @@ class ImageDataset(data.Dataset):
         mean=[0.485, 0.456, 0.406]
         std=[0.229, 0.224, 0.225]
 
-        img = np.stack([(img-mean[0])/std[0], (img-mean[1])/std[1], country_code_channel])
+        #img = np.stack([(img-mean[0])/std[0], (img-mean[1])/std[1], country_code_channel])
+        img = np.stack([(img-mean[0])/std[0], (img-mean[1])/std[1], (img-mean[2])/std[2]])
         
         return img
 
@@ -105,7 +108,7 @@ def get_train_loader(train_index, batch_size=4, img_sz=256, dev_mode=False):
         df = df.iloc[:10]
 
     dset = ImageDataset(df, img_transform=train_transforms, img_sz=img_sz)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=4, drop_last=True)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=6, drop_last=True)
     dloader.num = len(dset)
     return dloader
 
@@ -116,7 +119,7 @@ def get_val_loader(val_num=50, batch_size=4, img_sz=256, dev_mode=False):
         df = df.iloc[:10]
 
     dset = ImageDataset(df, img_transform=None, img_sz=img_sz)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=6, drop_last=False)
     dloader.num = len(dset)
     return dloader
 
@@ -127,6 +130,7 @@ def get_test_loader(batch_size=256, img_sz=256, dev_mode=False):
     if dev_mode:
         test_df = test_df.iloc[:10]
 
+    test_df['drawing'] = test_df['drawing'].apply(json.loads)
     #img_dir = settings.TEST_SIMPLIFIED_IMG_DIR
     #print(test_df.head())
     dset = ImageDataset(test_df, has_label=False, img_transform=None, img_sz=img_sz)

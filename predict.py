@@ -54,7 +54,7 @@ def predict_top3(args):
         print(len(label_names))
         print(label_names)
         key_id = test_loader.meta['key_id'].values.tolist()[0]
-        show_test_img(key_id)
+        #show_test_img(key_id)
 
     create_submission(args, label_names, args.sub_file)
 

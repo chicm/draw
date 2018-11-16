@@ -83,6 +83,7 @@ def train(args):
         train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
 
         train_loss = 0
+        optimizer.zero_grad()
 
         current_lr = get_lrs(optimizer)  #optimizer.state_dict()['param_groups'][2]['lr']
         bg = time.time()
@@ -90,13 +91,15 @@ def train(args):
             train_iter += 1
             img, target = data
             img, target = img.cuda(), target.cuda()
-            optimizer.zero_grad()
+            #optimizer.zero_grad()
             output = model(img)
             
             loss = criterion(output, target)
             loss.backward()
- 
-            optimizer.step()
+            
+            if (batch_idx > 0 and batch_idx % 8 == 0) or (train_iter > 0 and train_iter % args.iter_val == 0):
+                optimizer.step()
+                optimizer.zero_grad()
 
             train_loss += loss.item()
             print('\r {:4d} | {:.5f} | {:4d}/{} | {:.4f} | {:.4f} |'.format(

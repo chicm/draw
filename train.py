@@ -43,7 +43,10 @@ def map3(output, label):
 
 def train(args):
     print('start training...')
-    model, model_file = create_model(args.backbone)
+    model, model_file = create_model(args.backbone, args.img_sz)
+
+    if args.multi_gpu:
+        model = nn.DataParallel(model).cuda()
     
     if args.optim == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.0001)
@@ -110,7 +113,10 @@ def train(args):
                 _save_ckp = ''
                 if args.always_save or map3 > best_map3:
                     best_map3 = map3
-                    torch.save(model.state_dict(), model_file)
+                    if args.multi_gpu:
+                        torch.save(model.module.state_dict(), model_file)
+                    else:
+                        torch.save(model.state_dict(), model_file)
                     _save_ckp = '*'
                 print('  {:.4f} | {:.4f} | {:.4f} | {:.4f} | {:.4f} | {:.4f} | {:.2f} |  {:4s} |'.format(
                     top1_acc, top3_acc, top5_acc, val_loss, map3, best_map3, (time.time() - bg) / 60, _save_ckp))
@@ -186,6 +192,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_num', default=95, type=int, help='alway save')
     parser.add_argument('--img_sz', default=256, type=int, help='alway save')
     parser.add_argument('--val_num', default=20000, type=int, help='alway save')
+    parser.add_argument('--multi_gpu',action='store_true', help='use multi gpus')
     
     args = parser.parse_args()
     print(args)

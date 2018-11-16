@@ -62,9 +62,9 @@ class DrawNet(nn.Module):
         return [param_group1]
 
 
-def create_model(backbone):
+def create_model(backbone, img_sz):
     model = DrawNet(backbone_name=backbone)
-    model_file = os.path.join(settings.MODEL_DIR, model.name, 'best.pth')
+    model_file = os.path.join(settings.MODEL_DIR, model.name, 'best_{}.pth'.format(img_sz))
 
     parent_dir = os.path.dirname(model_file)
     if not os.path.exists(parent_dir):
@@ -80,7 +80,7 @@ def create_model(backbone):
     return model, model_file
 
 def test():
-    model, _ = create_model('resnet18')
+    model, _ = create_model('resnet18', 128)
     x = torch.randn(4, 3,256,256).cuda()
     y = model(x)
     print(y.size())

@@ -34,8 +34,11 @@ class Resize(object):
         return cv2.resize(img, self.img_sz)
 '''
 class HFlip(object):
+    def __init__(self, p=0.5):
+        self.p = p
+
     def __call__(self, img):
-        if random.random() < 0.5:
+        if random.random() < self.p:
             return np.flip(img, 2).copy()
         else:
             return img
@@ -62,6 +65,12 @@ test_transforms = transforms.Compose([
             #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # open images mean and std
         ])
 '''
+def get_tta_transform(index=0):
+    if index == 0:
+        return None
+    if index == 1:
+        return HFlip(1.)
+    raise ValueError('tta index error')
 
 class ImageDataset(data.Dataset):
     def __init__(self, df, has_label=True, img_transform=None, img_sz=256):
@@ -123,7 +132,7 @@ def get_val_loader(val_num=50, batch_size=4, img_sz=256, dev_mode=False):
     dloader.num = len(dset)
     return dloader
 
-def get_test_loader(batch_size=256, img_sz=256, dev_mode=False):
+def get_test_loader(batch_size=256, img_sz=256, dev_mode=False, tta_index=0):
     #test_df = pd.read_csv(settings.SAMPLE_SUBMISSION, dtype={'key_id': np.str})
     test_df = pd.read_csv(settings.TEST_SIMPLIFIED)
 
@@ -133,7 +142,7 @@ def get_test_loader(batch_size=256, img_sz=256, dev_mode=False):
     test_df['drawing'] = test_df['drawing'].apply(json.loads)
     #img_dir = settings.TEST_SIMPLIFIED_IMG_DIR
     #print(test_df.head())
-    dset = ImageDataset(test_df, has_label=False, img_transform=None, img_sz=img_sz)
+    dset = ImageDataset(test_df, has_label=False, img_transform=get_tta_transform(tta_index), img_sz=img_sz)
     dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
     dloader.num = len(dset)
     dloader.meta = test_df
@@ -154,12 +163,12 @@ def test_val_loader():
         print(torch.max(img), torch.min(img))
 
 def test_test_loader():
-    loader = get_test_loader(dev_mode=True)
+    loader = get_test_loader(dev_mode=True, tta_index=1)
     print(loader.num)
     for img in loader:
         print(img.size())
 
 if __name__ == '__main__':
-    test_train_loader()
+    #test_train_loader()
     #test_val_loader()
-    #test_test_loader()
+    test_test_loader()

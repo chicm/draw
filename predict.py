@@ -21,6 +21,40 @@ def create_submission(args, predictions, outfile):
     meta['word'] = predictions
     meta.to_csv(outfile, index=False)
 
+def model_predict(args, model, model_file, check=False, tta_num=2):
+    model.eval()
+
+    preds = []
+    for flip_index in range(tta_num):
+        print('tta index:', flip_index)
+        test_loader = get_test_loader(batch_size=args.batch_size, dev_mode=args.dev_mode, tta_index=flip_index)
+
+        outputs = None
+        with torch.no_grad():
+            for i, x in enumerate(test_loader):
+                x = x.cuda()
+                output = model(x)
+                output = F.softmax(output, dim=1)
+                if outputs is None:
+                    outputs = output.cpu()
+                else:
+                    outputs = torch.cat([outputs, output.cpu()], 0)
+                print('{}/{}'.format(args.batch_size*(i+1), test_loader.num), end='\r')
+                if check and i == 0:
+                    break
+
+        preds.append(outputs)
+        #return outputs
+    results = torch.mean(torch.stack(preds), 0)
+
+    parent_dir = model_file+'_out'
+    if not os.path.exists(parent_dir):
+        os.makedirs(parent_dir)
+    np_file = os.path.join(parent_dir, 'pred.npy')
+    np.save(np_file, results.numpy())
+
+    return results
+
 def predict_top3(args):
     model, model_file = create_model(args.backbone)
 
@@ -30,19 +64,8 @@ def predict_top3(args):
     model.eval()
     test_loader = get_test_loader(batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
 
-    preds = None
-    with torch.no_grad():
-        for i, x in enumerate(test_loader):
-            x = x.cuda()
-            output = model(x)
-            output = F.softmax(output, dim=1)
-            _, pred = output.topk(3, 1, True, True)
-
-            if preds is None:
-                preds = pred.cpu()
-            else:
-                preds = torch.cat([preds, pred.cpu()], 0)
-            print('{}/{}'.format(args.batch_size*(i+1), test_loader.num), end='\r')
+    outputs = model_predict(args, model, model_file)
+    _, preds = outputs.topk(3, 1, True, True)
 
     classes, _ = get_classes()
     label_names = []
@@ -54,7 +77,7 @@ def predict_top3(args):
         print(len(label_names))
         print(label_names)
         key_id = test_loader.meta['key_id'].values.tolist()[0]
-        #show_test_img(key_id)
+        show_test_img(key_id)
 
     create_submission(args, label_names, args.sub_file)
 
@@ -67,7 +90,7 @@ def show_test_img(key_id):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Quick Draw')
-    parser.add_argument('--backbone', default='resnet34', type=str, help='backbone')
+    parser.add_argument('--backbone', default='resnet18', type=str, help='backbone')
     parser.add_argument('--batch_size', default=512, type=int, help='batch_size')
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--dev_mode', action='store_true')

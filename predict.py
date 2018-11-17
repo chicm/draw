@@ -56,7 +56,7 @@ def model_predict(args, model, model_file, check=False, tta_num=2):
     return results
 
 def predict_top3(args):
-    model, model_file = create_model(args.backbone)
+    model, model_file = create_model(args.backbone, args.img_sz)
 
     if not os.path.exists(model_file):
         raise AssertionError('model file not exist: {}'.format(model_file))
@@ -81,6 +81,25 @@ def predict_top3(args):
 
     create_submission(args, label_names, args.sub_file)
 
+def ensemble_np(np_files):
+    print(np_files)
+    outputs_all = []
+    for np_file in np_files:
+        outputs_all.append(np.load(np_file))
+    outputs = np.mean(outputs_all, 0)
+    print(outputs.shape)
+    outputs = torch.from_numpy(outputs)
+    _, preds = outputs.topk(3, 1, True, True)
+
+    classes, _ = get_classes()
+    label_names = []
+    preds = preds.numpy()
+    print(preds.shape)
+    for row in preds:
+        label_names.append(' '.join([classes[i] for i in row]))
+    create_submission(args, label_names, args.sub_file)
+
+
 def show_test_img(key_id):
     fn = os.path.join(settings.TEST_SIMPLIFIED_IMG_DIR, '{}.jpg'.format(key_id))
     img = cv2.imread(fn)
@@ -96,8 +115,13 @@ if __name__ == '__main__':
     parser.add_argument('--dev_mode', action='store_true')
     parser.add_argument('--sub_file', default='sub/sub1.csv', help='submission file')
     parser.add_argument('--img_sz', default=256, type=int, help='alway save')
+    parser.add_argument('--ensemble_np', default=None, type=str, help='np files')
     
     args = parser.parse_args()
     print(args)
 
-    predict_top3(args)
+    if args.ensemble_np:
+        np_files = args.ensemble_np.split(',')
+        ensemble_np(np_files)
+    else:
+        predict_top3(args)

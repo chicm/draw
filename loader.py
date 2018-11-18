@@ -110,29 +110,29 @@ class ImageDataset(data.Dataset):
         return img
 
 
-def get_train_loader(train_index, batch_size=4, img_sz=256, dev_mode=False):
+def get_train_loader(train_index, batch_size=4, img_sz=256, dev_mode=False, workers=8):
     df = get_train_meta(index=train_index, dev_mode=dev_mode)
 
     if dev_mode:
         df = df.iloc[:10]
 
     dset = ImageDataset(df, img_transform=train_transforms, img_sz=img_sz)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=6, drop_last=True)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=True, num_workers=workers, drop_last=True)
     dloader.num = len(dset)
     return dloader
 
-def get_val_loader(val_num=50, batch_size=4, img_sz=256, dev_mode=False):
+def get_val_loader(val_num=50, batch_size=4, img_sz=256, dev_mode=False, workers=8):
     df = get_val_meta(val_num=val_num)
 
     if dev_mode:
         df = df.iloc[:10]
 
     dset = ImageDataset(df, img_transform=None, img_sz=img_sz)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=6, drop_last=False)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=workers, drop_last=False)
     dloader.num = len(dset)
     return dloader
 
-def get_test_loader(batch_size=256, img_sz=256, dev_mode=False, tta_index=0):
+def get_test_loader(batch_size=256, img_sz=256, dev_mode=False, tta_index=0, workers=8):
     #test_df = pd.read_csv(settings.SAMPLE_SUBMISSION, dtype={'key_id': np.str})
     test_df = pd.read_csv(settings.TEST_SIMPLIFIED)
 
@@ -143,7 +143,7 @@ def get_test_loader(batch_size=256, img_sz=256, dev_mode=False, tta_index=0):
     #img_dir = settings.TEST_SIMPLIFIED_IMG_DIR
     #print(test_df.head())
     dset = ImageDataset(test_df, has_label=False, img_transform=get_tta_transform(tta_index), img_sz=img_sz)
-    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
+    dloader = data.DataLoader(dset, batch_size=batch_size, shuffle=False, num_workers=workers, drop_last=False)
     dloader.num = len(dset)
     dloader.meta = test_df
     return dloader

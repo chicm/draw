@@ -27,7 +27,7 @@ def model_predict(args, model, model_file, check=False, tta_num=2):
     preds = []
     for flip_index in range(tta_num):
         print('tta index:', flip_index)
-        test_loader = get_test_loader(batch_size=args.batch_size, dev_mode=args.dev_mode, tta_index=flip_index)
+        test_loader = get_test_loader(batch_size=args.batch_size, img_sz=args.img_sz, dev_mode=args.dev_mode, tta_index=flip_index)
 
         outputs = None
         with torch.no_grad():

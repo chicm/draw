@@ -49,9 +49,13 @@ def train(args):
         model = nn.DataParallel(model).cuda()
     
     if args.optim == 'Adam':
-        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=0.0001)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    elif args.optim == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    elif args.optim == 'rmsprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     else:
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=0.0001)
+        raise ValueError('invalid optim')
 
     if args.lrs == 'plateau':
         lr_scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=args.factor, patience=args.patience, min_lr=args.min_lr)
@@ -59,7 +63,7 @@ def train(args):
         lr_scheduler = CosineAnnealingLR(optimizer, args.t_max, eta_min=args.min_lr)
     #ExponentialLR(optimizer, 0.9, last_epoch=-1) #CosineAnnealingLR(optimizer, 15, 1e-7) 
 
-    val_loader = get_val_loader(val_num=args.val_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
+    val_loader = get_val_loader(val_num=args.val_num, batch_size=args.batch_size*2, dev_mode=args.dev_mode, img_sz=args.img_sz, workers=args.workers)
     
     best_map3 = 0.
 
@@ -83,7 +87,7 @@ def train(args):
     train_iter = 0
 
     for epoch in range(args.start_epoch, args.epochs):
-        train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz)
+        train_loader = get_train_loader(train_index=epoch % args.train_num, batch_size=args.batch_size, dev_mode=args.dev_mode, img_sz=args.img_sz, workers=args.workers)
 
         train_loss = 0
         optimizer.zero_grad()
@@ -100,7 +104,7 @@ def train(args):
             loss = criterion(output, target)
             loss.backward()
             
-            if (batch_idx > 0 and batch_idx % 8 == 0) or (train_iter > 0 and train_iter % args.iter_val == 0):
+            if ((batch_idx+1) % args.acc_grad == 0) or (train_iter > 0 and train_iter % args.iter_val == 0):
                 optimizer.step()
                 optimizer.zero_grad()
 
@@ -180,11 +184,13 @@ if __name__ == '__main__':
     parser.add_argument('--start_epoch', default=0, type=int, help='start epoch')
     parser.add_argument('--iter_val', default=100, type=int, help='start epoch')
     parser.add_argument('--epochs', default=200, type=int, help='epoch')
-    parser.add_argument('--optim', default='SGD', choices=['SGD', 'Adam'], help='optimizer')
+    parser.add_argument('--optim', default='SGD', choices=['SGD', 'Adam', 'rmsprop'], help='optimizer')
     parser.add_argument('--lrs', default='plateau', choices=['cosine', 'plateau'], help='LR sceduler')
     parser.add_argument('--patience', default=6, type=int, help='lr scheduler patience')
     parser.add_argument('--factor', default=0.5, type=float, help='lr scheduler factor')
     parser.add_argument('--t_max', default=12, type=int, help='lr scheduler patience')
+    parser.add_argument('--weight_decay', default=0.0001, type=float, help='weight decay')
+    parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
     parser.add_argument('--val', action='store_true')
     parser.add_argument('--dev_mode', action='store_true')
     parser.add_argument('--no_first_val', action='store_true')
@@ -193,6 +199,8 @@ if __name__ == '__main__':
     parser.add_argument('--img_sz', default=256, type=int, help='alway save')
     parser.add_argument('--val_num', default=20000, type=int, help='alway save')
     parser.add_argument('--multi_gpu',action='store_true', help='use multi gpus')
+    parser.add_argument('--acc_grad', default=1, type=int, help='gradient accumulation')
+    parser.add_argument('--workers', default=8, type=int, help='workers')
     
     args = parser.parse_args()
     print(args)

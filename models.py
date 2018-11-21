@@ -5,9 +5,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from net.resnet import resnet18, resnet34, resnet50, resnet101, resnet152
-from net.senet import se_resnext50_32x4d, se_resnet50, senet154, se_resnet152
+from net.senet import se_resnext50_32x4d, se_resnet50, senet154, se_resnet152, se_resnext101_32x4d
 from net.densenet import densenet121, densenet161, densenet169, densenet201
-from net.nasnet_mobile import nasnet
+from net.nasnet_mobile import nasnetmobile
+from net.nasnet import nasnetalarge
 from net.MobileNetV2 import mobilenet
 import settings
 
@@ -16,7 +17,7 @@ class DrawNet(nn.Module):
     def __init__(self, backbone_name, num_classes=340, pretrained=True):
         super(DrawNet, self).__init__()
         print('num_classes:', num_classes)
-        if backbone_name in ['se_resnext50_32x4d', 'se_resnet50', 'senet154', 'se_resnet152', 'nasnet', 'mobilenet']:
+        if backbone_name in ['se_resnext50_32x4d', 'se_resnext101_32x4d', 'se_resnet50', 'senet154', 'se_resnet152', 'nasnetmobile', 'mobilenet', 'nasnetalarge']:
             self.backbone = eval(backbone_name)()
         elif backbone_name in ['resnet34', 'resnet18', 'resnet50', 'resnet101', 'resnet152', 'densenet121', 'densenet161', 'densenet169', 'densenet201']:
             self.backbone = eval(backbone_name)(pretrained=pretrained)
@@ -26,7 +27,7 @@ class DrawNet(nn.Module):
 
         if backbone_name in ['resnet18', 'resnet34']:
             ftr_num = 512
-        elif backbone_name =='nasnet':
+        elif backbone_name =='nasnetmobile':
             ftr_num = 1056
         elif backbone_name == 'mobilenet':
             ftr_num = 1280
@@ -38,6 +39,8 @@ class DrawNet(nn.Module):
             ftr_num = 1664
         elif backbone_name == 'densenet201':
             ftr_num = 1920
+        elif backbone_name == 'nasnetalarge':
+            ftr_num = 4032
         else:
             ftr_num = 2048
 

@@ -40,22 +40,6 @@ def convert_gjx_csvs(csv_dir=r'F:\BaiduYunDownload\model_scores'):
         col_names = ['key_id', *gjx_classes]
         df.to_csv(os.path.join(convert_dir, os.path.basename(file_name)), index=False, columns=col_names)
 
-def save_gjx_to_npy(csv_dir=r'F:\BaiduYunDownload\model_scores'):
-    #gjx_classes = get_gjx_classes()
-    classes, _ = get_classes()
-    convert_dir = os.path.join(csv_dir, 'converted')
-    target_np_file = os.path.join(csv_dir, 'gjx.npy')
-    results = []
-    for file_name in glob.glob(os.path.join(convert_dir, '*')):
-        print(file_name)
-        df = pd.read_csv(file_name)
-        df = df[classes]
-        print(df.head())
-        print(df.values.shape)
-        results.append(df.values)
-    mean_results = np.mean(results, 0)
-    np.save(target_np_file, mean_results)
-
 def ensemble_csvs(csv_files, weights, sub_file):
     print(csv_files)
     classes, _ = get_classes()
@@ -85,10 +69,9 @@ def create_submission(preds, outfile):
 if __name__ == '__main__':
     #check_classes()
     #convert_gjx_csvs()
-    #save_gjx_to_npy()
-    csv_files1 = glob.glob(r'F:\BaiduYunDownload\model_scores\converted\*.csv')
+    csv_files1 = glob.glob(r'F:\BaiduYunDownload\model_scores\gjx\*.csv')
     csv_files2 = glob.glob(r'F:\BaiduYunDownload\yyqing\*.csv')
     csv_files3 = glob.glob(r'F:\BaiduYunDownload\chicm\*.csv')
     csv_files = csv_files1 + csv_files2 + csv_files3
-    w = [1.]*7 + [0.7]*6
-    ensemble_csvs(csv_files, weights=w, sub_file='sub/weighted_ensemble_1129_2.csv')
+    w = [1.]*7 + [0.3]*6
+    ensemble_csvs(csv_files, weights=w, sub_file='sub/weighted_ensemble_1129_3.csv')

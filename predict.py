@@ -14,12 +14,7 @@ from models import DrawNet, create_model
 from utils import get_classes
 
 
-def create_submission(args, predictions, outfile):
-    meta = pd.read_csv(settings.SAMPLE_SUBMISSION)
-    if args.dev_mode:
-        meta = meta.iloc[:len(predictions)]  # for dev mode
-    meta['word'] = predictions
-    meta.to_csv(outfile, index=False)
+
 
 def model_predict(args, model, model_file, check=False, tta_num=2):
     model.eval()
@@ -67,19 +62,10 @@ def predict_top3(args):
     outputs = model_predict(args, model, model_file)
     _, preds = outputs.topk(3, 1, True, True)
 
-    classes, _ = get_classes()
-    label_names = []
     preds = preds.numpy()
     print(preds.shape)
-    for row in preds:
-        label_names.append(' '.join([classes[i] for i in row]))
-    if args.dev_mode:
-        print(len(label_names))
-        print(label_names)
-        key_id = test_loader.meta['key_id'].values.tolist()[0]
-        show_test_img(key_id)
-
-    create_submission(args, label_names, args.sub_file)
+    
+    create_submission(args, preds, args.sub_file)
 
 def ensemble_np(np_files):
     print(np_files)
@@ -90,15 +76,44 @@ def ensemble_np(np_files):
     print(outputs.shape)
     outputs = torch.from_numpy(outputs)
     _, preds = outputs.topk(3, 1, True, True)
+    preds = preds.numpy()
 
+    create_submission(args, preds, args.sub_file)
+
+def create_submission(args, preds, outfile):
     classes, _ = get_classes()
     label_names = []
-    preds = preds.numpy()
-    print(preds.shape)
     for row in preds:
         label_names.append(' '.join([classes[i] for i in row]))
-    create_submission(args, label_names, args.sub_file)
 
+    meta = pd.read_csv(settings.SAMPLE_SUBMISSION)
+    if args.dev_mode:
+        meta = meta.iloc[:len(label_names)]  # for dev mode
+    meta['word'] = label_names
+    meta.to_csv(outfile, index=False)
+
+def save_raw_csv(np_file):
+    df = pd.read_csv(settings.SAMPLE_SUBMISSION)
+
+    np_dir = os.path.dirname(np_file)
+    csv_file_name = os.path.join(np_dir, 'raw.csv')
+    outputs = np.load(np_file)
+    classes, _ = get_classes()
+
+    for i, c in enumerate(classes):
+        df[c] = outputs[:, i]
+    col_names = ['key_id', *classes]
+    df.to_csv(csv_file_name, index=False, columns=col_names)
+
+def create_sub_from_raw_csv(args, csv_file):
+    classes, _ = get_classes()
+    df = pd.read_csv(csv_file)
+    df = df[classes]
+
+    outputs = torch.from_numpy(df.values)
+    _, preds = outputs.topk(3, 1, True, True)
+    preds = preds.numpy()
+    create_submission(args, preds, args.sub_file)
 
 def show_test_img(key_id):
     fn = os.path.join(settings.TEST_SIMPLIFIED_IMG_DIR, '{}.jpg'.format(key_id))
@@ -116,6 +131,8 @@ if __name__ == '__main__':
     parser.add_argument('--sub_file', default='sub/sub1.csv', help='submission file')
     parser.add_argument('--img_sz', default=256, type=int, help='alway save')
     parser.add_argument('--ensemble_np', default=None, type=str, help='np files')
+    parser.add_argument('--save_raw_csv', default=None, type=str, help='np files')
+    parser.add_argument('--sub_from_csv', default=None, type=str, help='np files')
     
     args = parser.parse_args()
     print(args)
@@ -123,5 +140,9 @@ if __name__ == '__main__':
     if args.ensemble_np:
         np_files = args.ensemble_np.split(',')
         ensemble_np(np_files)
+    elif args.save_raw_csv:
+        save_raw_csv(args.save_raw_csv)
+    elif args.sub_from_csv:
+        create_sub_from_raw_csv(args, args.sub_from_csv)
     else:
         predict_top3(args)

@@ -9,11 +9,6 @@ import settings
 from utils import get_classes
 
 
-def create_submission(predictions, outfile):
-    meta = pd.read_csv(settings.SAMPLE_SUBMISSION)
-    meta['word'] = predictions
-    meta.to_csv(outfile, index=False)
-
 def get_gjx_classes():
     df = pd.read_csv(r'F:\BaiduYunDownload\model_scores\label_index.csv', names=['classes'])
     gjx_classes = df['classes'].values.tolist()
@@ -22,20 +17,10 @@ def get_gjx_classes():
 
 def check_classes():
     classes, _ = get_classes()
-    df = pd.read_csv(r'F:\BaiduYunDownload\model_scores\label_index.csv', names=['classes'])
-    gjx_classes = df['classes'].values.tolist()
-    gjx_classes = [x.replace(' ', '_') for x in gjx_classes]
-    #print(gjx_classes[:10])
-    #print(classes)
-    #print('>>>')
-    #print(gjx_classes)
+    gjx_classes = get_gjx_classes()
     for i in range(len(classes)):
         if classes[i] != gjx_classes[i]:
             print(i, classes[i], gjx_classes[i])
-
-def ensemble_gjx_csv(csv_dir=r'F:\BaiduYunDownload\model_scores'):
-    pass
-    # df_files = 
 
 def convert_gjx_csvs(csv_dir=r'F:\BaiduYunDownload\model_scores'):
     gjx_classes = get_gjx_classes()
@@ -71,26 +56,39 @@ def save_gjx_to_npy(csv_dir=r'F:\BaiduYunDownload\model_scores'):
     mean_results = np.mean(results, 0)
     np.save(target_np_file, mean_results)
 
-def ensemble_np(np_files, sub_file='sub/gjx_ensemble_test.csv'):
-    print(np_files)
-    outputs_all = []
-    for np_file in np_files:
-        outputs_all.append(np.load(np_file))
-    outputs = np.mean(outputs_all, 0)
-    print(outputs.shape)
+def ensemble_csvs(csv_files, weights, sub_file):
+    print(csv_files)
+    classes, _ = get_classes()
+    results = []
+    for filename in csv_files:
+        print(filename)
+        df = pd.read_csv(filename)
+        df = df[classes]
+        results.append(df.values)
+    outputs = np.average(results, axis=0, weights=weights)
     outputs = torch.from_numpy(outputs)
     _, preds = outputs.topk(3, 1, True, True)
+    preds = preds.numpy()
 
+    create_submission(preds, sub_file)
+
+def create_submission(preds, outfile):
     classes, _ = get_classes()
     label_names = []
-    preds = preds.numpy()
-    print(preds.shape)
     for row in preds:
         label_names.append(' '.join([classes[i] for i in row]))
-    create_submission(label_names, sub_file)
+
+    meta = pd.read_csv(settings.SAMPLE_SUBMISSION)
+    meta['word'] = label_names
+    meta.to_csv(outfile, index=False)
 
 if __name__ == '__main__':
     #check_classes()
     #convert_gjx_csvs()
     #save_gjx_to_npy()
-    ensemble_np([r'F:\BaiduYunDownload\model_scores\gjx.npy'])
+    csv_files1 = glob.glob(r'F:\BaiduYunDownload\model_scores\converted\*.csv')
+    csv_files2 = glob.glob(r'F:\BaiduYunDownload\yyqing\*.csv')
+    csv_files3 = glob.glob(r'F:\BaiduYunDownload\chicm\*.csv')
+    csv_files = csv_files1 + csv_files2 + csv_files3
+    w = [1.]*7 + [0.7]*6
+    ensemble_csvs(csv_files, weights=w, sub_file='sub/weighted_ensemble_1129_2.csv')
